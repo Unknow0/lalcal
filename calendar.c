@@ -26,7 +26,7 @@ void first_day_of_month(struct tm *cal)
 	{
 	if(cal->tm_mday==1)
 		return;
-	cal->tm_wday-=cal->tm_mday%7;
+	cal->tm_wday=cal->tm_wday-(cal->tm_mday%7)+1;
 	if(cal->tm_wday<0)
 		cal->tm_wday+=7;
 	cal->tm_mday=1;
