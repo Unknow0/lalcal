@@ -260,14 +260,20 @@ void paintCalendar(Display * display, GC gc, Window calendar, XftDraw * caldraw,
 	{
 	int i = 0;
 	int p_x = 0, p_y = 0;
-	int fdw;
 	int eom=end_of_month(&draw_cal);
+	int fdw=draw_cal.tm_wday-startday;
+	if(fdw<0)
+		fdw+=7;
 
 	if(draw_cal.tm_year==curtime->tm_year&&draw_cal.tm_mon==curtime->tm_mon)
 		{
-		p_x=(curtime->tm_wday-startday)*glyph_w*3-1;
-		i=(curtime->tm_mday+(draw_cal.tm_wday-startday))/7;
-	    p_y=(2+i)*glyph_h+8;
+		int curw=curtime->tm_wday-startday;
+		if(curw<0)
+			curw+=7;
+
+		p_x=curw*glyph_w*3-1;
+		i=(curtime->tm_mday+fdw-1)/7+2;
+	    p_y=i*glyph_h+8;
 	    XftDrawRect(caldraw, xfthlcolor, p_x, p_y, glyph_w*2+6, glyph_h);
 		}
 
@@ -295,9 +301,6 @@ void paintCalendar(Display * display, GC gc, Window calendar, XftDraw * caldraw,
 	while(i!=startday);
 
 	i=1;
-	fdw=draw_cal.tm_wday-startday;
-	if(fdw<0)
-		fdw+=7;
 	p_x=2+fdw*glyph_w*3;
 	p_y+=glyph_h+2;
 	while(i<=eom)
