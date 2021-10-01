@@ -63,7 +63,7 @@ void sub_month(struct tm *cal)
 int end_of_month(struct tm *cal)
 	{
 	if(cal->tm_mon==1) // febuary
-		{ // TODO check leapyear
+		{
 		int y=cal->tm_year;
 		if((y%4==0&&y%100!=0)||y%400==0)
 			return 29;

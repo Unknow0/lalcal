@@ -43,13 +43,12 @@ char *timeformat = "%T";
 char *colorname = "white";
 char *bgcolorname = "black";
 char *hlcolorname = "grey30";
-char curr_cal[8][30];
 
 int glyph_w, glyph_h;
 
 int cal_width; /* width of the calendar window */
 struct tm draw_cal;
-struct tm *curtime;
+struct tm curtime;
 
 char draw_line[50];
 char weekdays[7][2];
@@ -121,8 +120,8 @@ void locateCalendar(Display * display, int screen, Window dockapp, Window root, 
 static void gettime(char *strtime, int len)
 	{
 	time_t t = time(NULL);
-	curtime = localtime(&t);
-	strftime(strtime, len, timeformat, curtime);
+	localtime_r(&t, &curtime);
+	strftime(strtime, len, timeformat, &curtime);
 	}
 
 void handle_term(int signal)
@@ -265,14 +264,14 @@ void paintCalendar(Display * display, GC gc, Window calendar, XftDraw * caldraw,
 	if(fdw<0)
 		fdw+=7;
 
-	if(draw_cal.tm_year==curtime->tm_year&&draw_cal.tm_mon==curtime->tm_mon)
+	if(draw_cal.tm_year==curtime.tm_year&&draw_cal.tm_mon==curtime.tm_mon)
 		{
-		int curw=curtime->tm_wday-startday;
+		int curw=curtime.tm_wday-startday;
 		if(curw<0)
 			curw+=7;
 
 		p_x=curw*glyph_w*3-1;
-		i=(curtime->tm_mday+fdw-1)/7+2;
+		i=(curtime.tm_mday+fdw-1)/7+2;
 	    p_y=i*glyph_h+8;
 	    XftDrawRect(caldraw, xfthlcolor, p_x, p_y, glyph_w*2+6, glyph_h);
 		}
@@ -314,8 +313,6 @@ void paintCalendar(Display * display, GC gc, Window calendar, XftDraw * caldraw,
 			p_y+=glyph_h+1;
 			}
 		}
-
-	XFlush(display);
 	}
 
 /** initialize week day */
@@ -469,7 +466,6 @@ int main(int argc, char *argv[])
 
 	XSelectInput(display, dockapp, ExposureMask | StructureNotifyMask | ButtonPressMask | ButtonReleaseMask);
 	XMapWindow(display, dockapp);
-	XFlush(display);
 
 	/*Set up calendar window */
 	int loc_x = 0;
@@ -487,6 +483,7 @@ int main(int argc, char *argv[])
 
 	timeout.tv_sec = timeout.tv_usec = 0;
 
+	XFlush(display);
 	while (running)
 		{
 		FD_ZERO(&fds);
@@ -501,54 +498,47 @@ int main(int argc, char *argv[])
 				gettime(strtime, 50);
 				XClearWindow(display, dockapp);
 				XftDrawStringUtf8(draw, &xftcolor, font, x, y, (unsigned char *) strtime, strlen(strtime));
-				XFlush(display);
 				timeout.tv_sec = 1;
 				timeout.tv_usec = 0;
+				break;
 			case 1:
-				if (FD_ISSET(xfd, &fds))
+				XNextEvent(display, &event);
+				switch (event.type)
 					{
-					XNextEvent(display, &event);
-					switch (event.type)
-						{
-						case ButtonPress:
-							if (event.xbutton.window == dockapp && event.xbutton.button == 1)
-								{ // toggle calendar
-								if (calopen)
-									{
-									XUnmapWindow(display, calendar);
-									calopen = 0;
-									}
-								else
-									{
-									time_t curtime=time(NULL);
-									localtime_r(&curtime, &draw_cal);
-									
-									first_day_of_month(&draw_cal);
-
-									locateCalendar(display, screen, dockapp, root, calendar);
-									XMapWindow(display, calendar);
-									calopen = 1;
-									}
-								}
-							else if(event.xbutton.button == 1)
+					case ButtonPress:
+						if (event.xbutton.window == dockapp && event.xbutton.button == 1)
+							{ // toggle calendar
+							if (calopen = 1 - calopen)
 								{
-								m_x = event.xbutton.x;
-								if (m_x >= 0 && m_x < (glyph_w * 20 + 2) / 2)
-									sub_month(&draw_cal);
-								else if (m_x >= (glyph_w * 20 +	2) / 2 && m_x <= glyph_w * 20 + 2)
-									add_month(&draw_cal);
-								XClearWindow(display, calendar);
+								time_t curtime=time(NULL);
+								localtime_r(&curtime, &draw_cal);
+								
+								first_day_of_month(&draw_cal);
+
+								locateCalendar(display, screen, dockapp, root, calendar);
 								paintCalendar(display, gc, calendar, caldraw, calfont, &xftcolor, &xfthlcolor);
+								XMapWindow(display, calendar);
 								}
-							XFlush(display);
-							break;
-						case Expose:
-							XClearWindow(display, dockapp);
+							else
+								XUnmapWindow(display, calendar);
+							}
+						else if(event.xbutton.button == 1)
+							{
+							m_x = event.xbutton.x;
+							if (m_x >= 0 && m_x < (glyph_w * 20 + 2) / 2)
+								sub_month(&draw_cal);
+							else if (m_x >= (glyph_w * 20 +	2) / 2 && m_x <= glyph_w * 20 + 2)
+								add_month(&draw_cal);
 							XClearWindow(display, calendar);
 							paintCalendar(display, gc, calendar, caldraw, calfont, &xftcolor, &xfthlcolor);
-							XftDrawStringUtf8(draw, &xftcolor, font, x, y, (unsigned char *)strtime, strlen(strtime));
-							XFlush(display);
-						}
+							}
+						XFlush(display);
+						break;
+					case Expose:
+						XClearWindow(display, dockapp);
+						XClearWindow(display, calendar);
+						paintCalendar(display, gc, calendar, caldraw, calfont, &xftcolor, &xfthlcolor);
+						XftDrawStringUtf8(draw, &xftcolor, font, x, y, (unsigned char *)strtime, strlen(strtime));
 					}
 				}
 			}
