@@ -500,6 +500,7 @@ int main(int argc, char *argv[])
 				XftDrawStringUtf8(draw, &xftcolor, font, x, y, (unsigned char *) strtime, strlen(strtime));
 				timeout.tv_sec = 1;
 				timeout.tv_usec = 0;
+				XFlush(display);
 				break;
 			case 1:
 				XNextEvent(display, &event);
@@ -532,16 +533,17 @@ int main(int argc, char *argv[])
 							XClearWindow(display, calendar);
 							paintCalendar(display, gc, calendar, caldraw, calfont, &xftcolor, &xfthlcolor);
 							}
-						XFlush(display);
 						break;
 					case Expose:
 						XClearWindow(display, dockapp);
 						XClearWindow(display, calendar);
 						paintCalendar(display, gc, calendar, caldraw, calfont, &xftcolor, &xfthlcolor);
 						XftDrawStringUtf8(draw, &xftcolor, font, x, y, (unsigned char *)strtime, strlen(strtime));
-					}
+						XFlush(display);
+						break;
 				}
 			}
+		}
 
 	XftFontClose(display, font);
 	XftFontClose(display, calfont);
