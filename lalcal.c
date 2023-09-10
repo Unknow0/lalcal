@@ -231,7 +231,7 @@ void get_params(Display * display, int argc, char *argv[])
 		bgcolorname = xrmval.addr;
 		}
 
-
+ 
 	if (XrmGetResource(database, "lalcal.hlcolor", "lalcal.hlcolor", &type, &xrmval) == True)
 		{
 		if (strcmp(type, "String"))
@@ -270,7 +270,7 @@ void paintCalendar(Display * display, GC gc, Window calendar, XftDraw * caldraw,
 		if(curw<0)
 			curw+=7;
 
-		p_x=curw*glyph_w*3-1;
+		p_x=curw * glyph_w * 3 - 1;
 		i=(curtime.tm_mday+fdw-1)/7+2;
 	    p_y=i*glyph_h+8;
 	    XftDrawRect(caldraw, xfthlcolor, p_x, p_y, glyph_w*2+6, glyph_h);
@@ -404,14 +404,7 @@ int main(int argc, char *argv[])
 	XftTextExtents8(display, calfont, (unsigned char*)"0", strlen("0"), &extents);
 	glyph_w = extents.xOff /* 1.4*/;
 	glyph_h = extents.height * 1.8;
-	XftTextExtents8(display, font, (unsigned char *) strtime, strlen(strtime), &extents);
-	x = (windowwidth - extents.width) / 2 + extents.x;
-	y = (24 - extents.height) / 2 + extents.y;
-	if (x < 0 || y < 0)
-		{
-		fprintf(stderr, "Uh oh, text doesn't fit inside window\n");
-		fflush(stderr);
-		}
+
 	draw = XftDrawCreate(display, dockapp, vis, colormap);
 	if (XParseColor(display, colormap, colorname, &c) == None)
 		{
@@ -473,7 +466,7 @@ int main(int argc, char *argv[])
 
 	initweekdays();
 
-	cal_width=glyph_w*21+1;
+	cal_width= glyph_w * 21 + 1;
 	calendar = XCreateSimpleWindow(display, root, loc_x, loc_y, cal_width, (glyph_h +2)* 8, 1, WhitePixel(display, DefaultScreen(display)),	xftbgcolor.pixel);
 	attributes.override_redirect = True;
 	XChangeWindowAttributes(display, calendar, CWOverrideRedirect, &attributes);
@@ -496,6 +489,10 @@ int main(int argc, char *argv[])
 				continue;
 			case 0:
 				gettime(strtime, 50);
+				XftTextExtents8(display, font, (unsigned char *) strtime, strlen(strtime), &extents);
+				x = (windowwidth - extents.width) / 2 + extents.x;
+				y = (24 - extents.height) / 2 + extents.y;
+
 				XClearWindow(display, dockapp);
 				XftDrawStringUtf8(draw, &xftcolor, font, x, y, (unsigned char *) strtime, strlen(strtime));
 				timeout.tv_sec = 1;
